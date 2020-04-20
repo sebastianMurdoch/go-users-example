@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	newrelic "github.com/newrelic/go-agent"
 	"github.com/sebastianMurdoch/go-users-example/config"
 	"github.com/sebastianMurdoch/go-users-example/domain"
 	"github.com/sebastianMurdoch/go-users-example/infrastructure"
@@ -11,6 +12,7 @@ import (
 type App struct {
 	Engine     *gin.Engine            `inject:"auto"`
 	Repository domain.UsersRepository `inject:"auto"`
+	Monitor    newrelic.Application  `inject:"auto"`
 }
 
 func main() {
@@ -26,6 +28,8 @@ func main() {
 
 	/* Status Ping */
 	app.Engine.GET("/ping", func(c *gin.Context) {
+		tx := app.Monitor.StartTransaction("PING", c.Writer, c.Request)
+		defer tx.End()
 		c.String(200, "pong")
 	})
 
@@ -42,5 +46,5 @@ func main() {
 		c.JSON(200, user)
 	})
 
-	app.Engine.Run(":"+port)
+	app.Engine.Run(":" + port)
 }

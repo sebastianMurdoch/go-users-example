@@ -6,6 +6,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	di_injector "github.com/sebastianMurdoch/di-injector"
+	newrelic "github.com/newrelic/go-agent"
+	"log"
 	"os"
 )
 
@@ -19,7 +21,7 @@ const (
 
 func NewHerokuContainer() di_injector.DiContainer {
 	c := di_injector.NewDiContainer()
-	c.AddToDependencies(db(), gin.Default())
+	c.AddToDependencies(db(), gin.Default(), newRelic())
 	return c
 }
 
@@ -37,4 +39,17 @@ func db() *sqlx.DB {
     username VARCHAR (255) NOT NULL);`
 	db.MustExec(schema)
 	return db
+}
+
+func newRelic() newrelic.Application {
+	newRelicApp, err := newrelic.NewApplication(
+		newrelic.Config{AppName: "shielded-tor-53126",
+			License: os.Getenv("NEW_RELIC_LICENSE_KEY"),
+			Enabled:true})
+	if err != nil {
+		log.Println("Could not init rewrelic agent")
+		// Returns nil for localhost tests
+		return nil
+	}
+	return newRelicApp
 }
